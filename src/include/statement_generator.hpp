@@ -62,6 +62,7 @@ private:
 	unique_ptr<SetStatement> GenerateSet();
 	unique_ptr<AttachStatement> GenerateAttach();
 	unique_ptr<DetachStatement> GenerateDetach();
+	unique_ptr<DeleteStatement> GenerateDelete();
 	unique_ptr<SelectStatement> GenerateSelect();
 	unique_ptr<CreateStatement> GenerateCreate();
 	unique_ptr<QueryNode> GenerateQueryNode();

@@ -25,6 +25,7 @@
 #include "duckdb/parser/statement/set_statement.hpp"
 #include "duckdb/parser/statement/update_statement.hpp"
 #include "duckdb/parser/tableref/list.hpp"
+#include "duckdb/parser/statement/delete_statement.hpp"
 
 namespace duckdb {
 
@@ -109,8 +110,11 @@ unique_ptr<SQLStatement> StatementGenerator::GenerateStatement() {
 	if (RandomPercentage(30)) {
 		return GenerateStatement(StatementType::SET_STATEMENT);
 	}
+	if (RandomPercentage(60)) {
+		return GenerateStatement(StatementType::DELETE_STATEMENT);
+	}
 	return GenerateStatement(StatementType::CREATE_STATEMENT);
-}
+ }
 
 unique_ptr<SQLStatement> StatementGenerator::GenerateStatement(StatementType type) {
 	switch (type) {
@@ -125,6 +129,8 @@ unique_ptr<SQLStatement> StatementGenerator::GenerateStatement(StatementType typ
 	// generate USE statement
 	case StatementType::SET_STATEMENT:
 		return GenerateSet();
+	case StatementType::DELETE_STATEMENT:
+		return GenerateDelete();
 	default:
 		throw InternalException("Unsupported type");
 	}
@@ -173,6 +179,12 @@ unique_ptr<MultiStatement> StatementGenerator::GenerateAttachUse() {
 	multi_statement->statements.push_back(std::move(GenerateAttach()));
 	multi_statement->statements.push_back(std::move(GenerateSet()));
 	return multi_statement;
+}
+
+unique_ptr<DeleteStatement> StatementGenerator::GenerateDelete() {
+	auto delete_statement = make_uniq<DeleteStatement>();
+	delete_statement->table = GenerateBaseTableRef();
+	return delete_statement;
 }
 
 //===--------------------------------------------------------------------===//
