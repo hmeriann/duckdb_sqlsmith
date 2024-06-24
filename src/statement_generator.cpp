@@ -94,23 +94,23 @@ std::shared_ptr<GeneratorContext> StatementGenerator::GetDatabaseState(ClientCon
 }
 
 unique_ptr<SQLStatement> StatementGenerator::GenerateStatement() {
-	if (RandomPercentage(80)) {
-		return GenerateStatement(StatementType::SELECT_STATEMENT);
-	}
-	if (RandomPercentage(40)) {
-		if (RandomPercentage(50)) {
-			// We call this directly so we have a higher chance to fuzz persistent databases
-			return GenerateAttachUse();
-		}
-		return GenerateStatement(StatementType::ATTACH_STATEMENT);
-	}
-	if (RandomPercentage(60)) {
-		return GenerateStatement(StatementType::DETACH_STATEMENT);
-	}
-	if (RandomPercentage(30)) {
-		return GenerateStatement(StatementType::SET_STATEMENT);
-	}
-	if (RandomPercentage(60)) {
+	// if (RandomPercentage(80)) {
+	// 	return GenerateStatement(StatementType::SELECT_STATEMENT);
+	// }
+	// if (RandomPercentage(40)) {
+	// 	if (RandomPercentage(50)) {
+	// 		// We call this directly so we have a higher chance to fuzz persistent databases
+	// 		return GenerateAttachUse();
+	// 	}
+	// 	return GenerateStatement(StatementType::ATTACH_STATEMENT);
+	// }
+	// if (RandomPercentage(60)) {
+	// 	return GenerateStatement(StatementType::DETACH_STATEMENT);
+	// }
+	// if (RandomPercentage(30)) {
+	// 	return GenerateStatement(StatementType::SET_STATEMENT);
+	// }
+	if (RandomPercentage(50)) {
 		return GenerateStatement(StatementType::DELETE_STATEMENT);
 	}
 	return GenerateStatement(StatementType::CREATE_STATEMENT);
@@ -184,6 +184,7 @@ unique_ptr<MultiStatement> StatementGenerator::GenerateAttachUse() {
 unique_ptr<DeleteStatement> StatementGenerator::GenerateDelete() {
 	auto delete_statement = make_uniq<DeleteStatement>();
 	delete_statement->table = GenerateBaseTableRef();
+
 	return delete_statement;
 }
 
@@ -529,11 +530,18 @@ unique_ptr<TableRef> StatementGenerator::GenerateSubqueryRef() {
 }
 
 unique_ptr<TableRef> StatementGenerator::GenerateTableFunctionRef() {
-	auto function = make_uniq<TableFunctionRef>();
-	auto &table_function_ref = Choose(generator_context->table_functions);
-	auto &entry = table_function_ref.get().Cast<TableFunctionCatalogEntry>();
+	auto random_fun = RandomValue(generator_context->table_functions.size());
+	auto original_val = random_fun;
+	auto table_function_ref = &generator_context->table_functions[random_fun];
+	while (table_function_ref->get().type == CatalogType::TABLE_MACRO_ENTRY) {	
+		random_fun++;	
+		if (random_fun >= original_val) {
+			throw NotImplementedException("Not implemented Cast function for CatalogType::TABLE_MACRO_ENTRY to TableFunctionCatalogEntry");
+		}
+		table_function_ref = &generator_context->table_functions[random_fun];
+	}
+	auto &entry = table_function_ref->get().Cast<TableFunctionCatalogEntry>();
 	auto table_function = entry.functions.GetFunctionByOffset(RandomValue(entry.functions.Size()));
-
 	auto result = make_uniq<TableFunctionRef>();
 	vector<unique_ptr<ParsedExpression>> children;
 	for (idx_t i = 0; i < table_function.arguments.size(); i++) {
